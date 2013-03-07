@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_sniff.c,v 1.54 2004/06/25 14:24:29 alor Exp $
 */
 
 #include <ec.h>
@@ -46,7 +45,10 @@ void set_forwardable_flag(struct packet_object *po);
 static void add_port(void *ports, u_int n);
 static void add_ip(void *digit, u_int n);
 static int expand_range_ip(char *str, void *target);
+
+#ifdef WITH_IPV6
 static int expand_ipv6(char *str, struct target_env *target);
+#endif
 
 void del_ip_list(struct ip_addr *ip, struct target_env *t);
 int cmp_ip_list(struct ip_addr *ip, struct target_env *t);
@@ -56,9 +58,12 @@ void free_ip_list(struct target_env *t);
 static pthread_mutex_t ip_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define IP_LIST_LOCK     do{ pthread_mutex_lock(&ip_list_mutex); } while(0)
 #define IP_LIST_UNLOCK   do{ pthread_mutex_unlock(&ip_list_mutex); } while(0)
+
+#ifdef WITH_IPV6
 static pthread_mutex_t ip6_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define IP6_LIST_LOCK    do{ pthread_mutex_lock(&ip6_list_mutex); } while(0)
 #define IP6_LIST_UNLOCK  do{ pthread_mutex_unlock(&ip6_list_mutex); } while(0)
+#endif
 
 /*******************************************/
 
@@ -184,7 +189,7 @@ static void set_interesting_flag(struct packet_object *po)
   
    /* 
     * reverse the matching but only if it has matched !
-    * if good && proto is valse, we have to go on with
+    * if good && proto is false, we have to go on with
     * tests and evaluate it later
     */
    if ((good && proto) && GBL_OPTIONS->reversed ^ (good && proto) ) {
@@ -197,6 +202,7 @@ static void set_interesting_flag(struct packet_object *po)
    /* FROM TARGET2 TO TARGET1 */
    
    /* T1.mac == dst & T1.ip = dst & T1.port = dst */
+   /* if broadcast then T2 -> broadcast */
    if ( (GBL_TARGET1->all_mac  || !memcmp(GBL_TARGET1->mac, po->L2.dst, MEDIA_ADDR_LEN) || !memcmp(GBL_IFACE->mac, po->L2.dst, MEDIA_ADDR_LEN)) &&
         (GBL_TARGET1->all_ip   || cmp_ip_list(&po->L3.dst, GBL_TARGET1) || 
             (GBL_OPTIONS->broadcast && ip_addr_is_broadcast(&po->L3.dst, &GBL_IFACE->ip) == ESUCCESS) ||
@@ -247,11 +253,12 @@ void reset_display_filter(struct target_env *t)
 int compile_display_filter(void)
 {
    char *t1, *t2;
-   
-   /* if not specified default to // */
+  
+#ifdef WITH_IPV6 
+   /* if not specified default to /// */
    if (!GBL_OPTIONS->target1)
       GBL_OPTIONS->target1 = strdup("///");
-   /* if // was specified, select all */
+   /* if /// was specified, select all */
    else if (!strncmp(GBL_OPTIONS->target1, "///", 3))
       GBL_TARGET1->scan_all = 1;
    
@@ -259,6 +266,19 @@ int compile_display_filter(void)
       GBL_OPTIONS->target2 = strdup("///");
    else if (!strncmp(GBL_OPTIONS->target2, "///", 3))
       GBL_TARGET2->scan_all = 1;
+#else
+   /* if not specified default to // */
+   if (!GBL_OPTIONS->target1)
+      GBL_OPTIONS->target1 = strdup("//");
+   /* if // was specified, select all */
+   else if (!strncmp(GBL_OPTIONS->target1, "//", 2) && strlen(GBL_OPTIONS->target1) == 2)
+      GBL_TARGET1->scan_all = 1;
+  
+   if (!GBL_OPTIONS->target2)
+      GBL_OPTIONS->target2 = strdup("//");
+   else if (!strncmp(GBL_OPTIONS->target2, "//", 2) && strlen(GBL_OPTIONS->target2) == 2)
+      GBL_TARGET2->scan_all = 1;
+#endif
 
    /* make a copy to operate on */
    t1 = strdup(GBL_OPTIONS->target1);
@@ -283,7 +303,13 @@ int compile_display_filter(void)
  */
 int compile_target(char *string, struct target_env *target)
 {
+
+#ifdef WITH_IPV6
 #define MAX_TOK 4
+#else
+#define MAX_TOK 3
+#endif
+
    char valid[] = "1234567890/.,-;:ABCDEFabcdef";
    char *tok[MAX_TOK];
    char *p;
@@ -305,15 +331,21 @@ int compile_target(char *string, struct target_env *target)
    for (p = strsep(&string, "/"); p != NULL; p = strsep(&string, "/")) {
       tok[i++] = strdup(p);
       /* bad parsing */
-      if (i > MAX_TOK) break;
+      if (i > (MAX_TOK - 1)) break;
    }
   
    if (i != MAX_TOK)
+#ifdef WITH_IPV6
       SEMIFATAL_ERROR("Incorrect number of token (///) in TARGET !!");
+#else
+      SEMIFATAL_ERROR("Incorrect number of token (//) in TARGET !!");
+#endif
    
    DEBUG_MSG("MAC  : [%s]", tok[0]);
    DEBUG_MSG("IP   : [%s]", tok[1]);
+#ifdef WITH_IPV6
    DEBUG_MSG("IPv6 : [%s]", tok[2]);
+#endif
    DEBUG_MSG("PORT : [%s]", tok[3]);
   
    /* set the mac address */
@@ -328,7 +360,8 @@ int compile_target(char *string, struct target_env *target)
    else
      for(p = strsep(&tok[1], ";"); p != NULL; p = strsep(&tok[1], ";"))
         expand_range_ip(p, target);
-   
+  
+#ifdef WITH_IPV6 
    if(!strcmp(tok[2], ""))
       target->all_ip6 = 1;
    else
@@ -345,7 +378,18 @@ int compile_target(char *string, struct target_env *target)
       if (expand_token(tok[3], 1<<16, &add_port, target->ports) == -EFATAL)
          SEMIFATAL_ERROR("Invalid port range");
    }
-   
+#else
+   /* 
+    * expand the range into the port bitmap array
+    * 1<<16 is MAX_PORTS 
+    */
+   if (!strcmp(tok[2], ""))
+      target->all_port = 1;
+   else {
+      if (expand_token(tok[2], 1<<16, &add_port, target->ports) == -EFATAL)
+         SEMIFATAL_ERROR("Invalid port range");
+   }
+#endif 
    for(i = 0; i < MAX_TOK; i++)
       SAFE_FREE(tok[i]);
 
@@ -402,11 +446,11 @@ static int expand_range_ip(char *str, void *target)
    p = str;
 
    /* tokenize the ip into 4 slices */
-   while ( (q = ec_strtok(p, ".", &tok)) ) {
+   while ((q = ec_strtok(p, ".", &tok)) ) {
       addr[i++] = strdup(q);
       /* reset p for the next strtok */
       if (p != NULL) p = NULL;
-      if (i > 4) break;
+      if (i > 3) break;
    }
 
    if (i != 4)
@@ -435,7 +479,7 @@ static int expand_range_ip(char *str, void *target)
       if (inet_aton(parsed_ip, &ipaddr) == 0)
          FATAL_ERROR("Invalid IP address (%s)", parsed_ip);
 
-      ip_addr_init(&tmp, AF_INET,(char *)&ipaddr );
+      ip_addr_init(&tmp, AF_INET,(u_char *)&ipaddr );
       add_ip_list(&tmp, target);
       
       /* give the impulse to the last octet */ 
@@ -456,6 +500,7 @@ static int expand_range_ip(char *str, void *target)
    return ESUCCESS;
 }
 
+#ifdef WITH_IPV6
 /* Adds IPv6 address to the target list */
 static int expand_ipv6(char *str, struct target_env *target)
 {
@@ -467,6 +512,7 @@ static int expand_ipv6(char *str, struct target_env *target)
    add_ip_list(&ip, target);
    return ESUCCESS;
 }
+#endif
 
 /* fill the digit structure with data */
 static void add_ip(void *digit, u_int n)
@@ -520,7 +566,7 @@ void add_ip_list(struct ip_addr *ip, struct target_env *t)
    
          IP_LIST_UNLOCK;
          break;
-
+#ifdef WITH_IPV6
       case AF_INET6:
          IP6_LIST_LOCK;
          LIST_FOREACH(last, &t->ip6, next) {
@@ -541,6 +587,7 @@ void add_ip_list(struct ip_addr *ip, struct target_env *t)
          t->scan_all = 0;
          IP6_LIST_UNLOCK;
          break;
+#endif
    }
    
    return;
@@ -566,7 +613,8 @@ int cmp_ip_list(struct ip_addr *ip, struct target_env *t)
 
          IP_LIST_UNLOCK;
          break;
-      
+     
+#ifdef WITH_IPV6 
       case AF_INET6:
          IP6_LIST_LOCK;
 
@@ -578,6 +626,7 @@ int cmp_ip_list(struct ip_addr *ip, struct target_env *t)
 
          IP6_LIST_UNLOCK;
          break;
+#endif
    }
    
    return 0;
@@ -613,6 +662,7 @@ void del_ip_list(struct ip_addr *ip, struct target_env *t)
          IP_LIST_UNLOCK;
          break;
 
+#ifdef WITH_IPV6
       case AF_INET6:
          IP6_LIST_LOCK;
 
@@ -631,6 +681,7 @@ void del_ip_list(struct ip_addr *ip, struct target_env *t)
 
          IP6_LIST_UNLOCK;
          break;
+#endif
    }
    
    return;
@@ -654,6 +705,7 @@ void free_ip_list(struct target_env *t)
    
    IP_LIST_UNLOCK;
 
+#ifdef WITH_IPV6
    IP6_LIST_LOCK;
    
    LIST_FOREACH_SAFE(e, &t->ip6, next, tmp) {
@@ -662,6 +714,7 @@ void free_ip_list(struct target_env *t)
    }
 
    IP6_LIST_UNLOCK;
+#endif
 }
 
 

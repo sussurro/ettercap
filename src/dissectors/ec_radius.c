@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_radius.c,v 1.1 2005/07/07 10:08:56 alor Exp $
 */
 
 /*
@@ -104,11 +103,11 @@ FUNC_DECODER(dissector_radius)
    char tmp[MAX_ASCII_ADDR_LEN];
    struct radius_header *radius;
    u_char *attributes;
-   u_char *attr;
+   char *attr;
    u_int16 attr_len;
-   u_char user[0xff+1];
-   u_char pass[0xff+1];
-   u_char auth[0xff];
+   char user[0xff+1];
+   char pass[0xff+1];
+   char auth[0xff];
    size_t i;
    
    DEBUG_MSG("RADIUS --> UDP dissector_radius");
@@ -124,7 +123,7 @@ FUNC_DECODER(dissector_radius)
       return NULL;
 
    /* search for the username attribute */
-   attr = radius_get_attribute(RADIUS_ATTR_USER_NAME, &attr_len, attributes, end);
+   attr = (char*)radius_get_attribute(RADIUS_ATTR_USER_NAME, &attr_len, attributes, end);
   
    /* if the attribute is not found, the packet is not interesting */
    if (attr == NULL)
@@ -138,7 +137,7 @@ FUNC_DECODER(dissector_radius)
    strncpy(user, attr, attr_len);
    
    /* search for the password attribute */
-   attr = radius_get_attribute(RADIUS_ATTR_PASSWORD, &attr_len, attributes, end);
+   attr = (char*)radius_get_attribute(RADIUS_ATTR_PASSWORD, &attr_len, attributes, end);
   
    /* if the attribute is not found, the packet is not interesting */
    if (attr == NULL)

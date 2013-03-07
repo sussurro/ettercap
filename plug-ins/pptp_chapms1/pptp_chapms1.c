@@ -18,7 +18,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: pptp_chapms1.c,v 1.3 2004/01/10 12:07:19 lordnaga Exp $
 */
 
 
@@ -111,7 +110,7 @@ static void parse_ppp(struct packet_object *po)
    char tmp[MAX_ASCII_ADDR_LEN];
    u_char *chcode;
 
-   /* It's unuseful to modify packets that won't be forwarded */
+   /* It is pointless to modify packets that won't be forwarded */
    if (!(po->flags & PO_FORWARDABLE)) 
       return; 
 
@@ -124,7 +123,7 @@ static void parse_ppp(struct packet_object *po)
    if ( lcp->code != PPP_CONFIGURE_REQUEST && lcp->code != PPP_CONFIGURE_NAK && lcp->code != PPP_CONFIGURE_REJ) 
       return;
 
-   if ( (option=(u_int16 *)parse_option( (char *)(lcp + 1), PPP_AUTH_REQUEST, ntohs(lcp->length) - sizeof(*lcp))) ==NULL) 
+   if ( (option=(u_int16 *)parse_option( (u_char *)(lcp + 1), PPP_AUTH_REQUEST, ntohs(lcp->length) - sizeof(*lcp))) ==NULL) 
       return;
       
    if ( option[1] != htons(PPP_REQUEST_CHAP) ) 

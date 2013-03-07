@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: el_target.c,v 1.17 2004/06/25 14:24:30 alor Exp $
 */
 
 #include <el.h>
@@ -56,7 +55,7 @@ void target_compile(char *target)
    for(p=strsep(&target, "/"); p != NULL; p=strsep(&target, "/")) {
       tok[i++] = strdup(p);
       /* bad parsing */
-      if (i > MAX_TOK) break;
+      if (i > (MAX_TOK - 1)) break;
    }
 
    if (i != MAX_TOK)
@@ -149,7 +148,7 @@ static void expand_range_ip(char *str, void *target)
       addr[i++] = strdup(q);
       /* reset p for the next strtok */
       if (p != NULL) p = NULL;
-      if (i > 4) break;
+      if (i > 3) break;
    }
 
    if (i != 4)
@@ -175,7 +174,7 @@ static void expand_range_ip(char *str, void *target)
       if (inet_aton(parsed_ip, &ipaddr) == 0)
          FATAL_ERROR("Invalid IP address (%s)", parsed_ip);
 
-      ip_addr_init(&tmp, AF_INET,(char *)&ipaddr );
+      ip_addr_init(&tmp, AF_INET,(u_char *)&ipaddr );
       add_ip_list(&tmp, target);
       
       /* give the impulse to the last octet */ 

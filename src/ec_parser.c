@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_parser.c,v 1.65 2004/07/20 09:53:53 alor Exp $
 */
 
 
@@ -69,7 +68,7 @@ void ec_usage(void)
    fprintf(stdout, "\nSniffing and Attack options:\n");
    fprintf(stdout, "  -M, --mitm <METHOD:ARGS>    perform a mitm attack\n");
    fprintf(stdout, "  -o, --only-mitm             don't sniff, only perform the mitm attack\n");
-   fprintf(stdout, "  -b, --broadcast             sniff packets coming from broadcast\n");
+   fprintf(stdout, "  -b, --broadcast             sniff packets destined to broadcast\n");
    fprintf(stdout, "  -B, --bridge <IFACE>        use bridged sniff (needs 2 ifaces)\n");
    fprintf(stdout, "  -p, --nopromisc             do not put the iface in promisc mode\n");
    fprintf(stdout, "  -S, --nosslmitm             do not forge SSL certificates\n");
@@ -78,6 +77,8 @@ void ec_usage(void)
    fprintf(stdout, "  -f, --pcapfilter <string>   set the pcap filter <string>\n");
    fprintf(stdout, "  -R, --reversed              use reversed TARGET matching\n");
    fprintf(stdout, "  -t, --proto <proto>         sniff only this proto (default is all)\n");
+   fprintf(stdout, "      --certificate <file>    certificate file to use for SSL MiTM\n");
+   fprintf(stdout, "      --private-key <file>    private key file to use for SSL MiTM\n");
    
    fprintf(stdout, "\nUser Interface Type:\n");
    fprintf(stdout, "  -T, --text                  use text only GUI\n");
@@ -195,6 +196,8 @@ void parse_options(int argc, char **argv)
       { "broadcast", required_argument, NULL, 'b' },
       { "promisc", no_argument, NULL, 'p' },
       { "gateway", required_argument, NULL, 'Y' },
+      { "certificate", required_argument, NULL, 0 },
+      { "private-key", required_argument, NULL, 0 },
 
       
       { 0 , 0 , 0 , 0}
@@ -209,17 +212,21 @@ void parse_options(int argc, char **argv)
    GBL_PCAP->promisc = 1;
    GBL_FORMAT = &ascii_format;
    GBL_OPTIONS->ssl_mitm = 1;
+   GBL_OPTIONS->broadcast = 0;
+   GBL_OPTIONS->ssl_cert = NULL;
+   GBL_OPTIONS->ssl_pkey = NULL;
 
 /* OPTIONS INITIALIZED */
    
    optind = 0;
+   int option_index = 0;
 
-   while ((c = getopt_long (argc, argv, "A:a:bB:CchDdEe:F:f:GhIi:j:k:L:l:M:m:n:oP:pQqiRr:s:STt:UuV:vW:w:Y:Z:z", long_options, &longIndex)) != EOF) {
+   while ((c = getopt_long (argc, argv, "A:a:bB:CchDdEe:F:f:GhIi:j:k:L:l:M:m:n:oP:pQqiRr:s:STt:UuV:vW:w:Y:z", long_options, &option_index)) != EOF) {
       /* used for parsing arguments */
       char *opt_end = optarg;
       while (opt_end && *opt_end) opt_end++;
       /* enable a loaded filter script? */
-      uint8_t f_enabled = 0;
+      uint8_t f_enabled = 1;
 
       switch (c) {
 
@@ -231,7 +238,7 @@ void parse_options(int argc, char **argv)
                   
          case 'o':
                   GBL_OPTIONS->only_mitm = 1;
-                  select_text_interface();
+                  //select_text_interface();
                   break;
 
          case 'b':
@@ -402,7 +409,7 @@ void parse_options(int argc, char **argv)
                   break;
                   
          case 'W':
-                  set_wep_key(optarg);
+                  set_wep_key((u_char*)optarg);
                   break;
                   
          case 'a':
@@ -425,6 +432,27 @@ void parse_options(int argc, char **argv)
                   clean_exit(0);
                   break;
 
+        /* Certificate and private key options */
+         case 0:
+		if (!strcmp(long_options[option_index].name, "certificate")) {
+			GBL_OPTIONS->ssl_cert = strdup(optarg);	
+		} else if (!strcmp(long_options[option_index].name, "private-key")) {
+			GBL_OPTIONS->ssl_pkey = strdup(optarg);
+#ifdef HAVE_LUA
+                } else if (strcmp(long_options[longIndex].name,"lua-args") == 0) {
+                    ec_lua_cli_add_args(strdup(optarg));
+                } 
+                else if (strcmp(long_options[longIndex].name,"lua-script") == 0) {
+                    ec_lua_cli_add_script(strdup(optarg));
+        break;
+#endif
+		} else {
+			fprintf(stdout, "\nTry `%s --help' for more options.\n\n", GBL_PROGRAM);
+			clean_exit(-1);
+		}
+
+		break;
+
          case ':': // missing parameter
             fprintf(stdout, "\nTry `%s --help' for more options.\n\n", GBL_PROGRAM);
             clean_exit(-1);
@@ -434,18 +462,6 @@ void parse_options(int argc, char **argv)
             fprintf(stdout, "\nTry `%s --help' for more options.\n\n", GBL_PROGRAM);
             clean_exit(-1);
          break;
-#ifdef HAVE_LUA
-        case 0:
-                if (strcmp(long_options[longIndex].name,"lua-args") == 0)
-                {
-                    ec_lua_cli_add_args(strdup(optarg));
-                } 
-                else if (strcmp(long_options[longIndex].name,"lua-script") == 0)
-                {
-                    ec_lua_cli_add_script(strdup(optarg));
-                }
-        break;
-#endif
       }
    }
 
@@ -500,12 +516,14 @@ void parse_options(int argc, char **argv)
       FATAL_ERROR("Please select an User Interface");
      
    /* force text interface for only mitm attack */
+  /* Do not select text interface for only MiTM mode 
+
    if (GBL_OPTIONS->only_mitm) {
       if (GBL_OPTIONS->mitm)
          select_text_interface();
       else
          FATAL_ERROR("Only mitm requires at least one mitm method");
-   }
+   } */
 
    DEBUG_MSG("parse_options: options combination looks good");
    return;

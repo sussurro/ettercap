@@ -1,5 +1,4 @@
 
-/* $Id: ec.h,v 1.30 2004/09/30 16:01:45 alor Exp $ */
 
 #ifndef EC_H
 #define EC_H
@@ -81,6 +80,11 @@
 }while(0)
 
 #define SAFE_FREE(x) do{ if(x) { free(x); x = NULL; } }while(0)
+
+
+/* convert to string */
+#define EC_STRINGIFY(in) #in
+#define EC_TOSTRING(in) EC_STRINGIFY(in)
 
 #ifdef OS_LINUX
 #define __init       __attribute__((constructor(101)))

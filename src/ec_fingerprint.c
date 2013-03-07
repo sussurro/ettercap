@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_fingerprint.c,v 1.23 2004/06/25 14:24:29 alor Exp $
 
 */
 
@@ -52,7 +51,7 @@ int fingerprint_search(const char *f, char *dst);
 void fingerprint_default(char *finger);
 void fingerprint_push(char *finger, int param, int value);
 u_int8 TTL_PREDICTOR(u_int8 x);
-int fingerprint_submit(char *finger, char *os);
+int fingerprint_submit(const char *finger, char *os);
    
 /*****************************************/
 
@@ -194,7 +193,7 @@ int fingerprint_search(const char *f, char *dst)
    }
 
    if(GBL_CONF->submit_fingerprint)
-   	fingerprint_submit((char *)f, "Unknown");
+   	fingerprint_submit(f, "Unknown");
    return -ENOTFOUND;
 }
 
@@ -264,7 +263,7 @@ void fingerprint_push(char *finger, int param, int value)
          break;
       case FINGER_LT:
          /*
-          * since the LENGHT is the sum of the IP header
+          * since the LENGTH is the sum of the IP header
           * and the TCP header, we have to calculate it
           * in two steps. (decoders are unaware of other layers)
           */
@@ -300,7 +299,7 @@ u_int8 TTL_PREDICTOR(u_int8 x)
 /*
  * submit a fingerprint to the ettercap website
  */
-int fingerprint_submit(char *finger, char *os)
+int fingerprint_submit(const char *finger, char *os)
 {
    int sock;
    char host[] = "ettercap.sourceforge.net";
@@ -353,7 +352,7 @@ int fingerprint_submit(char *finger, char *os)
    USER_MSG("Submitting the fingerprint to %s...\n", page);
    
    /* send the request to the server */
-   socket_send(sock, getmsg, strlen(getmsg));
+   socket_send(sock, (const u_char*)getmsg, strlen(getmsg));
 
    DEBUG_MSG("fingerprint_submit - SEND \n\n%s\n\n", getmsg);
 

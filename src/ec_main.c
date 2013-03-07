@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_main.c,v 1.68 2005/06/24 13:52:12 alor Exp $
 */
 
 #include <ec.h>
@@ -116,6 +115,10 @@ int main(int argc, char *argv[])
     */
    if(!GBL_OPTIONS->read && !GBL_OPTIONS->unoffensive && !GBL_OPTIONS->only_mitm) {
       disable_ip_forward();
+	
+#ifdef OS_LINUX
+      disable_interface_offload();
+#endif
       /* binds ports and set redirect for ssl wrapper */
       if(GBL_SNIFF->type == SM_UNIFIED && GBL_OPTIONS->ssl_mitm)
          ssl_wrap_init();
@@ -154,7 +157,7 @@ int main(int argc, char *argv[])
 #endif
 
    /* set the encoding for the UTF-8 visualization */
-   set_utf8_encoding(GBL_CONF->utf8_encoding);
+   set_utf8_encoding((u_char*)GBL_CONF->utf8_encoding);
   
    /* print all the buffered messages */
    if (GBL_UI->type == UI_TEXT)
@@ -281,8 +284,7 @@ static void time_check(void)
    /* 
     * a nice easter egg... 
     * just to waste some time of code reviewers... ;) 
-    *
-    * and no, you can't simply remove this code, you'll break the license...
+    * ALoR, keeping this for you buddy! :)
     *
     * trust me, it's not evil ;) only a boring afternoon, and nothing to do...
     */

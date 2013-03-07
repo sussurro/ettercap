@@ -186,10 +186,18 @@ static int source_init(char *name, struct iface_env *source, bool primary, bool 
          return -ENOTHANDLED;
 
       struct stat st;
+      int stat_result;
+      FILE* pcap_file_h;
+
       pcap = pcap_open_offline(name, pcap_errbuf);
       ON_ERROR(pcap, NULL, "pcap_open_offline: %s", pcap_errbuf);
 
-      fstat(pcap_fileno(pcap), &st);
+      pcap_file_h = pcap_file(pcap);
+      ON_ERROR(pcap_file_h, 0, "pcap_fileno returned an invalid file handle");
+
+      stat_result = fstat(fileno(pcap_file_h), &st);
+      ON_ERROR(stat_result, -1, "fstat failed.");
+
       GBL_PCAP->dump_size = st.st_size;
    }
    source->dlt = pcap_datalink(pcap);
@@ -251,29 +259,31 @@ static int source_init(char *name, struct iface_env *source, bool primary, bool 
    ON_ERROR(ret, -1, "getifaddrs: %s", strerror(errno));
 
    for(ifaddr = ifaddrs; ifaddr; ifaddr = ifaddr->ifa_next) {
+      if (ifaddr->ifa_addr == NULL)
+         continue;
       if(strcmp(ifaddr->ifa_name, name))
          continue;
 
       if(ifaddr->ifa_addr->sa_family == AF_INET) {
-         sa4 = ifaddr->ifa_addr;
-         ip_addr_init(&source->ip, AF_INET, &sa4->sin_addr);
+         sa4 = (struct sockaddr_in*)ifaddr->ifa_addr;
+         ip_addr_init(&source->ip, AF_INET, (u_char*)&sa4->sin_addr);
          if(GBL_OPTIONS->netmask) {
-            u_int32 net;
+            struct in_addr net;
             if(inet_aton(GBL_OPTIONS->netmask, &net) == 0)
                FATAL_ERROR("Invalid netmask %s", GBL_OPTIONS->netmask);
-            ip_addr_init(&source->netmask, AF_INET, &net);
+            ip_addr_init(&source->netmask, AF_INET, (u_char*)&net);
          } else {
-            sa4 = ifaddr->ifa_netmask;
-            ip_addr_init(&source->netmask, AF_INET, &sa4->sin_addr);
+            sa4 = (struct sockaddr_in*)ifaddr->ifa_netmask;
+            ip_addr_init(&source->netmask, AF_INET, (u_char*)&sa4->sin_addr);
          }
          ip_addr_get_network(&source->ip, &source->netmask, &source->network);
          source->has_ipv4 = 1;
       } else if(ifaddr->ifa_addr->sa_family == AF_INET6) {
          SAFE_CALLOC(ip6, 1, sizeof(*ip6));
-         sa6 = ifaddr->ifa_addr;
-         ip_addr_init(&ip6->ip, AF_INET6, &sa6->sin6_addr);
-         sa6 = ifaddr->ifa_netmask;
-         ip_addr_init(&ip6->netmask, AF_INET6, &sa6->sin6_addr);
+         sa6 = (struct sockaddr_in6*)ifaddr->ifa_addr;
+         ip_addr_init(&ip6->ip, AF_INET6, (u_char*)&sa6->sin6_addr);
+         sa6 = (struct sockaddr_in6*)ifaddr->ifa_netmask;
+         ip_addr_init(&ip6->netmask, AF_INET6, (u_char*)&sa6->sin6_addr);
          ip_addr_get_network(&ip6->ip, &ip6->netmask, &ip6->network);
          ip6->prefix = ip_addr_get_prefix(&ip6->netmask);
          LIST_INSERT_HEAD(&source->ip6_list, ip6, next);
@@ -290,7 +300,9 @@ static int source_init(char *name, struct iface_env *source, bool primary, bool 
 
 static void source_close(struct iface_env *iface)
 {
+#ifdef WITH_IPV6
    struct net_list *n;
+#endif
 
    iface->is_ready = 0;
 
@@ -299,11 +311,13 @@ static void source_close(struct iface_env *iface)
 
    if(iface->lnet != NULL)
       libnet_destroy(iface->lnet);
-   
+  
+#ifdef WITH_IPV6 
    LIST_FOREACH(n, &iface->ip6_list, next) {
       LIST_REMOVE(n, next);
       SAFE_FREE(n);
    }
+#endif
 
    SAFE_FREE(iface->name);
    memset(iface, 0, sizeof(*iface));
@@ -363,7 +377,9 @@ static void close_secondary_sources(void)
 static void l3_init(void)
 {
    libnet_t *l4;
+#ifdef WITH_IPV6
    libnet_t *l6;
+#endif
    char lnet_errbuf[LIBNET_ERRBUF_SIZE];
 
    DEBUG_MSG("l3_init");
@@ -377,6 +393,7 @@ static void l3_init(void)
 
    GBL_LNET->lnet_IP4 = l4;               
 
+#ifdef WITH_IPV6
    /* open the socket at layer 3 for IPv6 */
    l6 = libnet_init(LIBNET_RAW6_ADV, NULL, lnet_errbuf);
    if(l6 == NULL) {
@@ -385,6 +402,7 @@ static void l3_init(void)
    }
    
    GBL_LNET->lnet_IP6 = l6;
+#endif
 
    atexit(l3_close);
 }
@@ -393,8 +411,10 @@ static void l3_close(void)
 {
    if(GBL_LNET->lnet_IP4)
       libnet_destroy(GBL_LNET->lnet_IP4);
+#ifdef WITH_IPV6
    if(GBL_LNET->lnet_IP6)
       libnet_destroy(GBL_LNET->lnet_IP6);
+#endif
    
    DEBUG_MSG("ATEXIT: send_closed");
 }

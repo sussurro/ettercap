@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_daemon.c,v 1.12 2004/09/28 13:50:37 alor Exp $
 */
 
 #include <ec.h>
@@ -197,7 +196,6 @@ static void daemonize(void)
    ON_ERROR(ret, -1, "Can't demonize %s", GBL_PROGRAM);
    
 #else
-   int fd;
    pid_t pid;
   
    DEBUG_MSG("daemonize: (manual)");

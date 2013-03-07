@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_scan.c,v 1.43 2004/12/21 20:27:15 alor Exp $
 */
 
 #include <ec.h>
@@ -118,7 +117,7 @@ void build_hosts_list(void)
 	scan_thread(NULL);
 #else
    /* check the type of UI we are running under... */
-   if (GBL_UI->type == UI_TEXT || GBL_UI->type == UI_DAEMONIZE)
+   if (GBL_UI->type == UI_TEXT || GBL_UI->type == UI_DAEMONIZE || GBL_UI->type == UI_CURSES)
       /* in text mode and demonized call the function directly */
       scan_thread(NULL);
    else 
@@ -145,7 +144,7 @@ static EC_THREAD_FUNC(scan_thread)
    ts.tv_nsec = 0;
 
    /* in text mode and demonized this function should NOT be a thread */
-   if (GBL_UI->type == UI_TEXT || GBL_UI->type == UI_DAEMONIZE)
+   if (GBL_UI->type == UI_TEXT || GBL_UI->type == UI_DAEMONIZE || GBL_UI->type == UI_CURSES)
       threadize = 0;
 
 #ifdef OS_MINGW
@@ -312,8 +311,8 @@ static void scan_decode(u_char *param, const struct pcap_pkthdr *pkthdr, const u
    memcpy(&po.ts, &pkthdr->ts, sizeof(struct timeval));
 
    /*
-    * in this special parsing, the packet must be ingored by
-    * application layer, leave this un touched.
+    * in this special parsing, the packet must be ignored by
+    * application layer, leave this untouched.
     */
    po.flags |= PO_DONT_DISSECT;
 
@@ -396,7 +395,7 @@ static void scan_netmask(pthread_t pid)
    for (i = 1; i <= nhosts; i++) {
       /* calculate the ip */
       current = (myip & netmask) | htonl(i);
-      ip_addr_init(&scanip, AF_INET, (char *)&current);
+      ip_addr_init(&scanip, AF_INET, (u_char *)&current);
 
       SAFE_CALLOC(e, 1, sizeof(struct ip_list));
 
@@ -462,8 +461,11 @@ static void scan_targets(pthread_t pid)
    int nhosts = 0, found, n = 1, ret;
    struct ip_list *e, *i, *m, *tmp;
    char title[100];
+
+#ifdef WITH_IPV6
    struct ip_addr ip;
    struct ip_addr bc;
+#endif
 
 #if !defined(OS_WINDOWS)
    struct timespec tm;
@@ -561,7 +563,7 @@ static void scan_targets(pthread_t pid)
 #ifdef WITH_IPV6
          case AF_INET6:
             ip_addr_is_local(&e->ip, &ip);
-            ip_addr_init(&bc, AF_INET6, IP6_ALL_NODES);
+            ip_addr_init(&bc, AF_INET6, (u_char*)IP6_ALL_NODES);
             send_icmp6_nsol(&ip, &bc, &e->ip, GBL_IFACE->mac);
             break;
 #endif
@@ -631,7 +633,7 @@ int scan_load_hosts(char *filename)
    for (nhosts = 0; !feof(hf); nhosts++) {
       int proto;
 
-      if (fscanf(hf, "%s %s %s\n", ip, mac, name) != 3 ||
+      if (fscanf(hf, "%"EC_TOSTRING(MAX_ASCII_ADDR_LEN)"s %"EC_TOSTRING(ETH_ASCII_ADDR_LEN)"s %"EC_TOSTRING(MAX_HOSTNAME_LEN)"s\n", ip, mac, name) != 3 ||
          *ip == '#' || *mac == '#' || *name == '#')
          continue;
 
@@ -644,7 +646,7 @@ int scan_load_hosts(char *filename)
          SEMIFATAL_ERROR("Bad parsing on line %d", nhosts + 1);
       }
 
-      ip_addr_init(&hip, proto, (char *)tip);
+      ip_addr_init(&hip, proto, (u_char *)tip);
 
       /* wipe the null hostname */
       if (!strcmp(name, "-"))

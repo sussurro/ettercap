@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: el_decode_http.c,v 1.5 2004/11/04 10:37:16 alor Exp $
 */
 
 #include <el.h>
@@ -49,7 +48,8 @@ FUNC_EXTRACTOR(extractor_http)
    struct so_list *ret, *ret2;
    char host[MAX_ASCII_ADDR_LEN];
    int len, fd;
-   u_char *ptr, *data;
+   char* ptr;
+   u_char *data;
    int client, server;
 
    
@@ -76,7 +76,7 @@ FUNC_EXTRACTOR(extractor_http)
          stream_move(STREAM, 4, SEEK_CUR, client);
 
          memset(header, 0, sizeof(header));
-         stream_read(STREAM, header, 128, client);
+         stream_read(STREAM, (u_char*)header, 128, client);
           
          /* get the filename (until the first blank) */
          if ( (ptr = strchr(header, ' ')) != NULL )
@@ -95,10 +95,10 @@ FUNC_EXTRACTOR(extractor_http)
 
          fprintf(stdout, "\n\tExtracting file: %s  ", header);
 
-         /* search the lenght of the file */
+         /* search the length of the file */
          ret2 = stream_search(STREAM, "Content-Length: ", 16, server);
 
-         /* we need content lenght, if not found, skip it */
+         /* we need content length, if not found, skip it */
          if (ret2 == NULL) {
             close(fd);
             continue;
@@ -106,7 +106,7 @@ FUNC_EXTRACTOR(extractor_http)
          
          /* get the string until the \r */
          stream_move(STREAM, 16, SEEK_CUR, server);
-         stream_read(STREAM, header, 10, server);
+         stream_read(STREAM, (u_char*)header, 10, server);
          if ( (ptr = strchr(header, '\r')) != NULL )
             *ptr = '\0';
          

@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_poll.c,v 1.5 2004/07/20 09:53:53 alor Exp $
 */
 
 #include <ec.h>
@@ -46,6 +45,7 @@ int ec_poll_buffer(char *buf);
 int ec_poll_in(int fd, u_int msec)
 {
 #if defined(HAVE_POLL) && !defined(OS_DARWIN)
+   int poll_result;
    struct pollfd poll_fd;
    
    /* set the correct fd */
@@ -53,10 +53,10 @@ int ec_poll_in(int fd, u_int msec)
    poll_fd.events = POLLIN;
          
    /* execute the syscall */
-   poll(&poll_fd, 1, msec);
-
+   poll_result = poll(&poll_fd, 1, msec);
+   
    /* the event has occurred, return 1 */
-   if (poll_fd.revents & POLLIN)
+   if (poll_result > 0 && poll_fd.revents & POLLIN)
       return 1;
   
    return 0;

@@ -1,5 +1,4 @@
 
-/* $Id: ec_globals.h,v 1.67 2004/09/28 09:56:11 alor Exp $ */
 
 #ifndef EC_GLOBALS_H
 #define EC_GLOBALS_H
@@ -12,6 +11,7 @@
 #include <ec_profiles.h>
 #include <ec_filter.h>
 #include <ec_interfaces.h>
+#include <config.h>
 
 #include <regex.h>
 
@@ -84,6 +84,8 @@ struct ec_options {
    char *target1;
    char *target2;
    char *script;
+   char *ssl_cert;
+   char *ssl_pkey;
    FILE *msg_fd;
    int (*format)(const u_char *, size_t, u_char *);
    regex_t *regex;

@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: dos_attack.c,v 1.8 2004/11/04 09:23:02 alor Exp $
 */
 
 
@@ -79,8 +78,7 @@ int plugin_load(void *handle)
 /******************* STANDARD FUNCTIONS *******************/
 
 static int dos_attack_init(void *dummy) 
-{
-   u_int8 ipaddr[MAX_IP_ADDR_LEN];   
+{ 
    char dos_addr[MAX_ASCII_ADDR_LEN];
    char unused_addr[MAX_ASCII_ADDR_LEN];
    struct port_list *p;

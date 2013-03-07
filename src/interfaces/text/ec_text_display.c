@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_text_display.c,v 1.5 2005/06/17 08:26:18 alor Exp $
 */
 
 #include <ec.h>
@@ -91,7 +90,8 @@ static void display_headers(struct packet_object *po)
    char proto[5];
    
    memset(flags, 0, sizeof(flags));
-   
+   memset(proto, 0, sizeof(proto));   
+
    fprintf(stdout, "\n\n");
    
    /* remove the final '\n' */

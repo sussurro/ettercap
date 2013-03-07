@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: rand_flood.c,v 1.4 2004/11/04 09:23:03 alor Exp $
 */
 
 
@@ -154,7 +153,7 @@ EC_THREAD_FUNC(flooder)
    harp->ar_pln = 4;
    harp->ar_op  = htons(ARPOP_REQUEST);
 
-   packet_create_object(&fake_po, fake_pck, FAKE_PCK_LEN);
+   packet_create_object(&fake_po, (u_char*)fake_pck, FAKE_PCK_LEN);
 
    /* init the thread and wait for start up */
    ec_thread_init();

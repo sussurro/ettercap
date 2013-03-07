@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_ui.c,v 1.30 2004/09/28 13:50:37 alor Exp $
 */
 
 #include <ec.h>
@@ -78,7 +77,9 @@ void ui_start(void)
    if (GBL_UI->initialized)
       EXECUTE(GBL_UI->start);
    else
+   {
       DEBUG_MSG("ui_start called initialized");
+   }
 }
 
 /* called to end the user interface */

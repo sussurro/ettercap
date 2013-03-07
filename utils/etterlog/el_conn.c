@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: el_conn.c,v 1.13 2004/11/04 10:37:16 alor Exp $
 */
 
 #include <el.h>
@@ -74,7 +73,7 @@ void conn_table_create(void)
       if (ret != ESUCCESS)
          break;
       
-      count += insert_table(&pck, buf);
+      count += insert_table(&pck, (char*)buf);
       
       SAFE_FREE(buf);
    }
@@ -205,7 +204,7 @@ void filcon_compile(char *conn)
    for(p=strsep(&conn, ":"); p != NULL; p=strsep(&conn, ":")) {
       tok[i++] = strdup(p);
       /* bad parsing */
-      if (i > MAX_TOK) break;
+      if (i > (MAX_TOK-1)) break;
    }
 
    if (i != MAX_TOK)
@@ -227,12 +226,12 @@ void filcon_compile(char *conn)
    if (inet_aton(tok[1], &ipaddr) == 0)
       FATAL_ERROR("Invalid IP address (%s)", tok[1]);
 
-   ip_addr_init(&conn_target.L3_src, AF_INET, (char *)&ipaddr );
+   ip_addr_init(&conn_target.L3_src, AF_INET, (u_char *)&ipaddr );
       
    if (inet_aton(tok[3], &ipaddr) == 0)
       FATAL_ERROR("Invalid IP address (%s)", tok[3]);
 
-   ip_addr_init(&conn_target.L3_dst, AF_INET, (char *)&ipaddr );
+   ip_addr_init(&conn_target.L3_dst, AF_INET, (u_char *)&ipaddr );
      
    /* free the data */
    for(i=0; i < MAX_TOK; i++)

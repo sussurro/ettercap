@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_ip.c,v 1.44 2005/06/30 08:42:19 lordnaga Exp $
 */
 
 #include <ec.h>
@@ -111,8 +110,8 @@ FUNC_DECODER(decode_ip)
    DECODED_LEN = (u_int32)(ip->ihl * 4);
 
    /* IP addresses */
-   ip_addr_init(&PACKET->L3.src, AF_INET, (char *)&ip->saddr);
-   ip_addr_init(&PACKET->L3.dst, AF_INET, (char *)&ip->daddr);
+   ip_addr_init(&PACKET->L3.src, AF_INET, (u_char *)&ip->saddr);
+   ip_addr_init(&PACKET->L3.dst, AF_INET, (u_char *)&ip->daddr);
    
    /* this is needed at upper layer to calculate the tcp payload size */
    /* check bogus size */
@@ -385,7 +384,7 @@ size_t ip_create_ident(void **i, struct packet_object *po)
    /* return the ident */
    *i = ident;
 
-   /* return the lenght of the ident */
+   /* return the length of the ident */
    return sizeof(struct ip_ident);
 }
 

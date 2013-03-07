@@ -13,6 +13,8 @@ option(ENABLE_LUA "Enable LUA support" OFF)
 set(MACPORTS_BASE_DIRECTORY "/opt/local" CACHE PATH "MacPorts installation base directory")
 set(SPECIAL_LIB_DIR "" CACHE PATH "Special (non-traditional) directory where libraries are installed")
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
+
 # Set the build type to Release, by default. Warn that the user should have 
 # selected a build type
 if("${CMAKE_BUILD_TYPE}" STREQUAL "") 
@@ -22,6 +24,7 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
 
 
 include(CMakeModules/CheckVariableInHeaders.cmake)
+include(CMakeModules/FindLIBNET.cmake)
 include(CMakeFiles/os_test.cmake)
 
 #Check and see if we're running Darwin, specify the CMAKE_LIBARY_PATH to do so
@@ -68,7 +71,6 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-Wl,-export-dynamic -pg" CACHE STRING "" FORCE
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-export-dynamic" CACHE STRING "" FORCE)
 endif(OS_DARWIN)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeModules)
 
 set(EC_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/include)
 include_directories(${EC_INCLUDE_PATH})

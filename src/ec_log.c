@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_log.c,v 1.42 2005/06/17 08:03:16 alor Exp $
 */
 
 #include <ec.h>
@@ -190,7 +189,7 @@ int log_open(struct log_fd *fd, char *filename)
       if (fd->cfd == NULL)
          SEMIFATAL_ERROR("%s", gzerror(fd->cfd, &zerr));
    } else {
-      fd->fd = open(filename, O_CREAT | O_TRUNC | O_RDWR | O_BINARY, 0740);
+      fd->fd = open(filename, O_CREAT | O_TRUNC | O_RDWR | O_BINARY, S_IRUSR | S_IWUSR);
       if (fd->fd == -1)
          SEMIFATAL_ERROR("Can't create %s: %s", filename, strerror(errno));
    }
@@ -245,7 +244,7 @@ static void log_packet(struct packet_object *po)
 
    /* the regex is set, respect it */
    if (GBL_OPTIONS->regex) {
-      if (regexec(GBL_OPTIONS->regex, po->DATA.disp_data, 0, NULL, 0) == 0)
+      if (regexec(GBL_OPTIONS->regex, (const char*)po->DATA.disp_data, 0, NULL, 0) == 0)
          log_write_packet(&fdp, po);
    } else {
       /* if no regex is set, dump all the packets */
@@ -382,7 +381,7 @@ void log_write_packet(struct log_fd *fd, struct packet_object *po)
 
 
 /*
- * log passive informations
+ * log passive information
  *
  * hi is the source
  * hid is the dest, used to log password.
@@ -469,7 +468,7 @@ void log_write_info(struct log_fd *fd, struct packet_object *po)
          break;
    }
    
-   /* set account informations */
+   /* set account information */
    hid.failed = po->DISSECTOR.failed;
    memcpy(&hid.client, &po->L3.src, sizeof(struct ip_addr));
    
@@ -488,7 +487,7 @@ void log_write_info(struct log_fd *fd, struct packet_object *po)
   
    /* check if the packet is interesting... else return */
    if (hi.L4_addr == 0 &&                 // the port is not open
-       !strcmp(hi.fingerprint, "") &&     // no fingerprint
+       !strcmp((char*)hi.fingerprint, "") &&     // no fingerprint
        hid.var.user_len == 0 &&           // no user and pass infos...
        hid.var.pass_len == 0 &&
        hid.var.info_len == 0 &&

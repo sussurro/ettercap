@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: remote_browser.c,v 1.6 2004/08/03 19:33:53 alor Exp $
 */
 
 
@@ -95,9 +94,9 @@ static void remote_browser(struct packet_object *po)
    int i = 0;
    
    /* the client is making a request */
-   if (po->DATA.disp_len != 0 && strstr(po->DATA.disp_data, "GET")) {
+   if (po->DATA.disp_len != 0 && strstr((const char*)po->DATA.disp_data, "GET")) {
       
-      tmp = strdup(po->DATA.disp_data);
+      tmp = strdup((const char*)po->DATA.disp_data);
 
       /* get the Host: directoive */
       host = strstr(tmp, "Host: ");

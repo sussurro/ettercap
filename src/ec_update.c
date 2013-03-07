@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_update.c,v 1.14 2004/06/25 14:24:29 alor Exp $
 */
 
 #include <ec.h>
@@ -70,12 +69,12 @@ void global_update(void)
                                      "\r\n", page, host, GBL_PROGRAM, GBL_VERSION );
 
    /* send the request to the server */
-   socket_send(sock, getmsg, strlen(getmsg));
+   socket_send(sock, (const u_char*)getmsg, strlen(getmsg));
 
    DEBUG_MSG("global_update - SEND \n\n%s\n\n", getmsg);
 
    /* get the server response */
-   len = socket_recv(sock, buffer, sizeof(buffer) - 1);
+   len = socket_recv(sock, (u_char*)buffer, sizeof(buffer) - 1);
 
    if (len == 0)
       FATAL_ERROR(EC_COLOR_RED"ERROR"EC_COLOR_END" The server does not respond");
@@ -283,12 +282,12 @@ static int do_update(char *file, char *url, char *errbuf)
                                      "\r\n", url, host, GBL_PROGRAM, GBL_VERSION );
    
    /* send the request to the server */
-   socket_send(sock, getmsg, strlen(getmsg));
+   socket_send(sock, (const u_char*)getmsg, strlen(getmsg));
 
    DEBUG_MSG("do_update - SEND \n\n%s\n\n", getmsg);
 
    /* get the server response */
-   while ( (len = socket_recv(sock, buffer, sizeof(buffer) - 1)) ) {
+   while ( (len = socket_recv(sock, (u_char*)buffer, sizeof(buffer) - 1)) ) {
 
       DEBUG_MSG("do_update - RECEIVE \n\n%s\n\n", buffer);
 

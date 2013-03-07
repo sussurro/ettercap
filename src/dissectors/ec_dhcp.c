@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_dhcp.c,v 1.11 2004/05/26 09:13:48 alor Exp $
 */
 
 /*
@@ -158,7 +157,7 @@ FUNC_DECODER(dissector_dhcp)
             else {
                /* search if the client already has the ip address */
                if (dhcp->ciaddr != 0) {
-                  ip_addr_init(&client, AF_INET, (char *)&dhcp->ciaddr);
+                  ip_addr_init(&client, AF_INET, (u_char *)&dhcp->ciaddr);
                } else
                   return NULL;
             }
@@ -200,10 +199,12 @@ FUNC_DECODER(dissector_dhcp)
             if (resp == DHCP_ACK)
                DEBUG_MSG("\tDissector_DHCP ACK");
             else
+            {
                DEBUG_MSG("\tDissector_DHCP OFFER");
+            }
    
             /* get the assigned ip */
-            ip_addr_init(&client, AF_INET, (char *)&dhcp->yiaddr );
+            ip_addr_init(&client, AF_INET, (u_char *)&dhcp->yiaddr );
             
             /* netmask */
             if ((opt = get_dhcp_option(DHCP_OPT_NETMASK, options, end)) != NULL)
@@ -227,7 +228,7 @@ FUNC_DECODER(dissector_dhcp)
 
             /* dns domain */
             if ((opt = get_dhcp_option(DHCP_OPT_DOMAIN, options, end)) != NULL) {
-                  strncpy(domain, opt + 1, MIN(*opt, sizeof(domain)) );
+                  strncpy(domain, (const char*)(opt + 1), MIN(*opt, sizeof(domain)) );
             
                DISSECT_MSG("\"%s\"\n", domain);
             } else
@@ -268,7 +269,7 @@ u_int8 * get_dhcp_option(u_int8 opt, u_int8 *ptr, u_int8 *end)
        */
       ptr = ptr + 2 + (*(ptr + 1));
 
-   } while (*ptr != DHCP_OPT_END && ptr < end);
+   } while (ptr < end && *ptr != DHCP_OPT_END);
    
    return NULL;
 }

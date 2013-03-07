@@ -17,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-    $Id: ec_sniff_bridge.c,v 1.18 2004/11/04 10:29:06 alor Exp $
 */
 
 #include <ec.h>
@@ -77,8 +76,6 @@ void start_bridge_sniff(void)
  */
 void stop_bridge_sniff(void)
 {
-   pthread_t pid;
-   
    DEBUG_MSG("stop_bridge_sniff");
    
    if (GBL_SNIFF->active == 0) {
