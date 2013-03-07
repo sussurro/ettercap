@@ -137,7 +137,7 @@ void ec_usage(void)
 
 void parse_options(int argc, char **argv)
 {
-   int c, longIndex;
+   int c;
 
    static struct option long_options[] = {
       { "help", no_argument, NULL, 'h' },
@@ -439,10 +439,10 @@ void parse_options(int argc, char **argv)
 		} else if (!strcmp(long_options[option_index].name, "private-key")) {
 			GBL_OPTIONS->ssl_pkey = strdup(optarg);
 #ifdef HAVE_LUA
-                } else if (strcmp(long_options[longIndex].name,"lua-args") == 0) {
+                } else if (!strcmp(long_options[option_index].name,"lua-args")) {
                     ec_lua_cli_add_args(strdup(optarg));
                 } 
-                else if (strcmp(long_options[longIndex].name,"lua-script") == 0) {
+                else if (!strcmp(long_options[option_index].name,"lua-script")) {
                     ec_lua_cli_add_script(strdup(optarg));
         break;
 #endif
