@@ -2,7 +2,7 @@
 # our distribution of ettercap.
 function(setup_included_luajit)
   include(ExternalProject)
-  SET(LUAJIT_VERSION 2.0.0-beta10)
+  SET(LUAJIT_VERSION 2.0.1)
   SET(LUAJIT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/luajit)
   SET(LUAJIT_BUILD_ROOT ${PROJECT_BINARY_DIR}/luajit-${LUAJIT_VERSION}-${CMAKE_BUILD_TYPE})
   SET(LUAJIT_PREFIX ${LUAJIT_BUILD_ROOT}/usr)
