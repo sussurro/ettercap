@@ -36,17 +36,6 @@ action = function(packet_object)
       return
    end
 
-   -- Get out session key for tracking req->reply pairs
-   local session_id = http.session_id(p,hobj)
-
-   -- If we can't track sessions, this won't work, get out
-   if session_id == nil then
-      return
-   end
-
-   -- We have a session, lets get our registry space
-   local reg = ettercap.reg.create_namespace(session_id)
-
    -- If it's a request, save the request to the registry
    -- We'll need this for the response
    if hobj.request then 
